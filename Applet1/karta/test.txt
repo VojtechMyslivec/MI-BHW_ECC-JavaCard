@@ -1,0 +1,12 @@
+// test my applet
+establish_context
+enable_trace
+enable_timer
+card_connect
+// select
+send_apdu -sc 0 -APDU 00A40400080102030405060809
+//...
+
+card_disconnect
+release_context
+powerdown;
