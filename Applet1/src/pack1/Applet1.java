@@ -192,73 +192,106 @@ public class Applet1 extends Applet {
         prinasobPolynom( yP, zP );     // 6.
         umocniPolynom( zP );           // 7.
         prinasobPolynom( xP, zP );     // 8.
-        prinasobPolynom( zP, T1 );     // 9. a 23. // zP
+        prinasobPolynom( zP, T1 );     // 9.    // vypocte Z2
 
         prictiPolynom( yP, zP );       // 10.
         prictiPolynom( xP, T1 );       // 11.
         umocniPolynom( xP );           // 12.
-        umocniPolynom( xP );           // 13. a 21. // xP
+        umocniPolynom( xP );           // 13.   // vypocte X2
 
         umocniPolynom( T1 );           // 14.
-        prictiPolynom( yP, T1 );       // 15.
+        prictiPolynom( yP, T1 );       // 15.   // vypocte U
         prinasobPolynom( yP, xP );     // 16.
         umocniPolynom( T1 );           // 17.
         prinasobPolynom( T1, zP );     // 18.
-        prictiPolynom( yP, T1 );       // 19. a 22. // yP
+        prictiPolynom( yP, T1 );       // 19.   // vypocte Y2
 
-        // TODO
-        T1.requestObjectDeletion();
+        // TODO delete T1
+        requestObjectDeletion();
     }
 
-    // P <- P + Q; algoritmus dle [4], A.10.7
+    // P <- P + Q; algoritmus dle [4], A.10.7, A.10.8
     public void sectiBody( ) {
-        // xP = T1
-        // yP = T2
-        // zP = T3
-        // xQ = T4
-        // yQ = T5
-        // zQ = T6
+        // algoritmus A.10.8 ========================================
+        // osetreni podminek, kdy se scita s nulou
+        // P <- P + 0 
+        if ( jePoleNula( zQ ) ) { 
+            return;
+        }
+        // P <- 0 + Q
+        if ( jePoleNula( zP ) ) {
+            priradPolynom( xP, xQ );
+            priradPolynom( yP, yQ );
+            priradPolynom( zP, zQ );
+            return;
+        }
+
+        // dale jiz algoritmus A.10.7 ===============================
+        //      xP = x0 = T1        xQ = x1 = T4
+        //      yP = y0 = T2        yQ = y1 = T5
+        //      zP = z0 = T3        zQ = z1 = T6
         byte[] T7 = vytvorKopiiPolynomu( zQ );
 
+        // IMHO neni potreba podminka, protoze se jinak nasobi polynomem 1... mozna se to jen zrychli
         if ( ! jsouPoleStejna( zQ, polynomJedna ) ) { // 7.
             umocniPolynom( T7 );
-            prinasobPolynom( xP, T7 );              //vypocte U0
+            prinasobPolynom( xP, T7 );  // vypocte U0
             prinasobPolynom( T7, zQ );
-            prinasobPolynom( T2, T7 );              // vypocte S0            
+            prinasobPolynom( yP, T7 );  // vypocte S0            
         }
         priradPolynom( T7, zP );
         umocniPolynom( T7 );        // 8.
 
-        byte[] T8 = vytvorKopiiPolynomu( T7 );    // 9a.
+        byte[] T8 = vytvorKopiiPolynomu( T7 );  // 9a.
         prinasobPolynom( T8, xQ );  // 9.   // vypocte U1
         prictiPolynom( xP, T8 );    // 10.  // vypocte W
+
         prinasobPolynom( T7, zP );  // 11.
 
         priradPolynom( T8, T7 );    // 12a.
-        prinasobPolynom( T8, T5 );  // 12.  // vypocte S1
-        prictiPolynom( yP, T8 );    // 13.     // vypocte R
+        prinasobPolynom( T8, yQ );  // 12.  // vypocte S1
+        prictiPolynom( yP, T8 );    // 13.  // vypocte R
         
+        // pokud vyjde xP nula, jedna se o P +- P
         if ( jePoleNula( xP ) ) {   // 14.
-            priradPolynom( zP, polynomNula );
-            if ( ! jePoleNula( yP ) ) {
+            // pokud je i yP nula, jedna se o zdvojovani bodu
+            if ( jePoleNula( yP ) ) {
+                // priradi puvodni souradnice
+                // TODO stoji za zvazeni, jestli se nepokazi normalizace bodu?!
+                priradPolynom( xP, xQ );
+                priradPolynom( yP, yQ );
+                priradPolynom( zP, zQ );
+                // zdvojeni bodu algoritmem A.10.6 ==================
+                zdvojBod( );
+            }
+            // jinak se jedna o bod O, znormalizuje ho
+            else {
+                // TODO Slo by resit tak, ze else lze vynechat a vzdy zavolat 
+                // zdvojBod. Podminka ve zdvojBod dela to same (vysledek 
+                // v nekonecnu).
+                priradPolynom( zP, polynomNula );
                 priradPolynom( xP, polynomJedna );
                 priradPolynom( yP, polynomJedna );
             }
-            JCSystem.requestObjectDeletion(); // T7, T8
+            // TODO delete T7, T8            
+            JCSystem.requestObjectDeletion();
             return;
         }
 
         prinasobPolynom( xQ, yP );  // 15.
         prinasobPolynom( zP, xP );  // 16.  // vypocte L a Z2 pokud Z1==1
-        prinasobPolynom( yQ, zP );  // 17.
-        
+
+        prinasobPolynom( yQ, zP );  // 17.        
         prictiPolynom( xQ, yQ );    // 18.  // vypocte V
+
         priradPolynom( yQ, zP );    // 19a.
-        umocniPolynom( yQ );        // 19.
+        umocniPolynom( yQ );        // 19. // TODO pozor! v norme je L_2 ale vypocitava se L^2 ... pravd. chyba v indexu 
+
         priradPolynom( T7, yQ );    // 20a.
         prinasobPolynom( T7, xQ );  // 20.
 
-        if ( ! jsouPoleStejna( zQ, polynomJedna ) ) {   //21.
+        // IMHO if neni potreba
+        if ( ! jsouPoleStejna( zQ, polynomJedna ) ) {   // 21.
             prinasobPolynom( zP, zQ );  // vypocte Z2 pokud z1!=1
         }
         
@@ -266,33 +299,38 @@ public class Applet1 extends Applet {
         prictiPolynom( xQ, yP );    // 22.  // vycpote T
 
         prinasobPolynom( yP, xQ );  // 23.
+
         priradPolynom( yQ, xP );    // 24a.
         umocniPolynom( yQ );        // 24
         prinasobPolynom( xP, yQ );  // 25
 
-        if ( ! jePoleNula( ECa ) ) { // 6. 26.
+        // toto nenastane, ECa neni nula!
+        // imho if neni potreba, jen usetri cas
+        if ( ! jePoleNula( ECa ) ) {    // 6. a 26.
             byte[] T9 = vytvorKopiiPolynomu( ECa ); // 6.
             priradPolynom( T8, zP );    // 26.
             umocniPolynom( T8 );
             prinasobPolynom( T9, T8 );
             prictiPolynom( xP, T9 );
-            // Smazat T9
-            JCSystem.requestObjectDeletion(); //T9
+            // TODO delete T9
+            JCSystem.requestObjectDeletion();
         }
         
+        prictiPolynom( xP, yP );    // 27.  // vypocte X2
 
-        prictiPolynom( xP, yP );    // 27.
         prinasobPolynom( xQ, xP );  // 28.
         priradPolynom( yP, xQ );    // 29a.
         prictiPolynom( yP, T7 );    // 29.  // vypocte Y2
 
+        // TODO delete T7, T8, T9
         JCSystem.requestObjectDeletion();
 
         return;
     }
 
     public void nasobBod( byte skalar ) {
-
+        // TODO
+        return;
     }
 
     /**
