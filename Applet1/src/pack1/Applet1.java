@@ -18,13 +18,16 @@
  *     [2]     Novotny, Martin. ECC, Arithmetics over GF(p) and GF(2^m) 
  *             v Bezpecnost a technicke prostredky. FIT CVUT v Praze, 2015
  *             <https://edux.fit.cvut.cz/courses/MI-BHW/_media/lectures/elliptic/mi-bhw-6-gfarithmetic.pdf>
- *     [3]     Merchan J. G., Güneysu T., Kumar S., Paar C., Pelzl J.
+ *     [3]     Merchan J. G., Kumar S., Paar C., Pelzl J.
  *             Efficient Software Implementation of Finite Fields with 
  *             Applications to Cryptography v Acta Applicandae Mathematicae: 
  *             An International Survey Journal on Applying Mathematics and
  *             Mathematical Applications, Volume 93, Numbers 1-3, pp. 3-32,
  *             September 2006. Ruhr-Universitat Bochum, 2006.
  *             <http://www.emsec.rub.de/research/publications/efficient-software-implementation-finite-fields-ap/>
+ *     [4]     IEEE Standard Specifications for Public-Key Cryptography,
+ *             IEEE Std 1363-2000. IEEE Computer Society, 2000.
+ *             <http://ieeexplore.ieee.org/xpl/mostRecentIssue.jsp?punumber=7168>
  *
  */
 
@@ -38,102 +41,97 @@ import javacard.framework.*;
  */
 public class Applet1 extends Applet {
 
-    public class cBinarniTeleso {
-        private byte[] hodnoty;
+//     public void inicializace( byte[] polynom ) {
+//         hodnoty = vytvorPrazdnePole( DELKAPOLE );
+//         for ( short i = 0 ; i < DELKAPOLE ; i++ ) { 
+//             hodnoty[i] = polynom[i];
+//         }
+//     }
 
-        public void inicializace( byte[] polynom ) {
-            hodnoty = vytvorPrazdnePole( DELKAPOLE );
-            for ( short i = 0 ; i < DELKAPOLE ; i++ ) { 
-                hodnoty[i] = polynom[i];
+//     public void destruct() {
+//         // TODO
+//         JCSystem.requestObjectDeletion();
+//     }
+
+    // A <- A xor B
+    public static boolean prictiPolynom( byte[] A, byte[] B ) {
+        prictiPole( A, B );
+    }
+
+    // A <- A * B mod P
+    // Comb metoda, dle [3], alg. 2 
+    public static boolean prinasobPolynom( byte[] A, byte[] B ) {
+        // aktualni hodnoty pole, v prubehu vypoctu se posouvaji max o 1 B
+        byte[] a = vytvorPrazdnePole( (byte)( DELKAPOLE + 1 ) );
+        zkopirujPole( a, A );
+        // jen ukazatel
+        byte[] b = B;
+        // v c postupne vznika vysledek
+        byte[] c = vytvorPrazdnePole( DELKAPOLEkrat2 );
+
+        // nasobeni ----------------------------------------
+        // cyklus pres bity
+        for ( byte j = 0 ; j < 8 ; j++ ) {
+            // cyklus pres bajty
+            for ( byte i = 0 ; i < DELKAPOLE ; i++ ) {
+                if ( bitZPole( b, (byte) ( i*8 + j ) )
+                    prictiPole( c, a, (byte)( DELKAPOLE + 1 ), i )
             }
-        }
-
-        public void destruct() {
-            // TODO
-            JCSystem.requestObjectDeletion();
-        }
-
-        public boolean pricti( cBinarniTeleso B ) {
-            for ( short i = 0 ; i < DELKAPOLE ; i++ ) { 
-                hodnoty[i] ^= B.hodnoty[i];
-            }
-            return true;
-        }
-
-        // Comb metoda, dle [3], alg. 2 
-        public boolean prinasob( cBinarniTeleso B ) {
-            // aktualni hodnoty pole, v prubehu vypoctu se posouvaji max o 1 B
-            byte[] a = vytvorPrazdnePole( (byte)( DELKAPOLE + 1 ) );
-            zkopirujPole( a, hodnoty );
-            // jen ukazatel
-            byte[] b = B.hodnoty;
-            // v c postupne vznika vysledek
-            byte[] c = vytvorPrazdnePole( DELKAPOLEkrat2 );
-
-            // nasobeni ----------------------------------------
-            // cyklus pres bity
-            for ( byte j = 0 ; j < 8 ; j++ ) {
-                // cyklus pres bajty
-                for ( byte i = 0 ; i < DELKAPOLE ; i++ ) {
-                    if ( bitZPole( b, (byte) ( i*8 + j ) )
-                        prictiPole( c, a, (byte)( DELKAPOLE + 1 ), i )
-                }
-                if ( ! posunPoleDoleva( a, (byte)( DELKAPOLE + 1 ) ) ) {
-                    // nesmi nasat, ze by nejaky bit vypadl. Znamenalo by to,
-                    // ze se nasobilo necim vice nez x^79
-                    return false;
-                }
-            }
-            // redukce -----------------------------------------
-            if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
-                // Nemelo by nastat. Znamenalo by to, ze byl 
-                // nejvyssi bit nastaven na 1
+            if ( ! posunPoleDoleva( a, (byte)( DELKAPOLE + 1 ) ) ) {
+                // nesmi nasat, ze by nejaky bit vypadl. Znamenalo by to,
+                // ze se nasobilo necim vice nez x^79
                 return false;
             }
-
-            // TODO
-            delete [] a;
-            delete [] c;
-
-            return true;
+        }
+        // redukce -----------------------------------------
+        if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
+            // Nemelo by nastat. Znamenalo by to, ze byl 
+            // nejvyssi bit nastaven na 1
+            return false;
         }
 
-        // expanze -- prolozeni nulami -- a nasledna redukce, dle [2], 
-        // Squaring over GF(2^m) with polynomial basis
-        // TODO kontrola
-        public boolean umocni( ) {
-            byte[] c = vytvorPrazdnePole( DELKAPOLEkrat2 );
-            byte   nibble;
-            // expanze -----------------------------------------
-            for ( byte i = DELKAPOLE-1 ; i >= 0 ; i-- ) {
-                // spodni nibble
-                nibble    = hodnoty[i] & 0x0F;
-                c[i]   = expanze[nibble];
-                // horni nibble
-                nibble    = (hodnoty[i]>>4) & 0x0F;
-                c[i+1] = expanze[nibble];
-            }
+        // TODO
+        delete [] a;
+        delete [] c;
 
-            // redukce -----------------------------------------
-            if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
-                // Nemelo by nastat. Znamenalo by to, ze byl 
-                // nejvyssi bit nastaven na 1
-                return false;
-            }
+        return true;
+    }
 
-            // TODO
-            delete [] c;
-            return true;
+    // A <- A^2 mod P
+    // expanze -- prolozeni nulami -- a nasledna redukce, dle [2], 
+    // Squaring over GF(2^m) with polynomial basis
+    public static boolean umocniPolynom( byte[] A ) {
+        byte[] c = vytvorPrazdnePole( DELKAPOLEkrat2 );
+        byte   nibble;
+        // expanze -----------------------------------------
+        for ( byte i = DELKAPOLE-1 ; i >= 0 ; i-- ) {
+            // spodni nibble
+            nibble = ( A[i]      ) & 0x0F;
+            c[i]   = expanze[nibble];
+            // horni nibble
+            nibble = ( A[i] >> 4 ) & 0x0F;
+            c[i+1] = expanze[nibble];
         }
 
+        // redukce -----------------------------------------
+        if ( ! redukujDvojnasobnyPolynom( A, c ) ) {
+            // Nemelo by nastat. Znamenalo by to, ze byl 
+            // nejvyssi bit nastaven na 1
+            return false;
+        }
 
-    };
-    // --------- end of class cBinarniTeleso ---------
-
+        // TODO
+        delete [] c;
+        return true;
+    }
 
     // Konstanty
     private static final byte   DELKAPOLE      = (byte)( 10 );
     private static final byte   DELKAPOLEkrat2 = (byte)( 2 * DELKAPOLE );
+    private static final byte   SOURADNIC = (byte)( 3 );
+    private static final byte   X         = (byte)( 0 );
+    private static final byte   Y         = (byte)( 1 );
+    private static final byte   Z         = (byte)( 2 );
     private static final byte   B0 = 0;
     private static final byte   B1 = 1;
     private static final byte   B2 = 2;
@@ -168,12 +166,12 @@ public class Applet1 extends Applet {
         (byte) 0x55  // '1111' -> '01010101'
     };
 
-    cBinarniTeleso xBodA;
-    cBinarniTeleso yBodA;
-    cBinarniTeleso zBodA;
-    cBinarniTeleso xBodB;
-    cBinarniTeleso yBodB;
-    cBinarniTeleso zBodB;
+//     cBinarniTeleso xBodA;
+//     cBinarniTeleso yBodA;
+//     cBinarniTeleso zBodA;
+//     cBinarniTeleso xBodB;
+//     cBinarniTeleso yBodB;
+//     cBinarniTeleso zBodB;
     short delkaArgumentu = -1;
 
     /**
@@ -248,10 +246,12 @@ public class Applet1 extends Applet {
         JCSystem.requestObjectDeletion();
     }
 
-    // TODO ?
-    public void sectiBody() {
-        //xBodA.pricti( yBodA );
-        xBodA.prinasob( yBodA );
+    public void sectiBody( byte[][] P, final byte[][] Q ) {
+
+    }
+
+    public void nasobBod( byte[][] P, byte  ) {
+
     }
 
     // TODO smazat?
