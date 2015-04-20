@@ -88,14 +88,14 @@ public class Applet1 extends Applet {
         (byte) 0x55  // '1111' -> '01010101'
     };
     
-    private byte[] xP = {
+    private byte[] xP; /*= {
        ( byte ) 0x30, ( byte ) 0xCB, ( byte ) 0x12, ( byte ) 0x7B, ( byte ) 0x63,
        ( byte ) 0xE4, ( byte ) 0x27, ( byte ) 0x92, ( byte ) 0xF1, ( byte ) 0x0F 
-    };
-    private byte[] yP = {
+    };*/
+    private byte[] yP; /*= {
        ( byte ) 0x54, ( byte ) 0x7B, ( byte ) 0x2C, ( byte ) 0x88, ( byte ) 0x26,
        ( byte ) 0x6B, ( byte ) 0xB0, ( byte ) 0x4F, ( byte ) 0x71, ( byte ) 0x3B 
-    };
+    };*/
     private byte[] zP;
     private byte[] xQ;
     private byte[] yQ;
@@ -125,13 +125,12 @@ public class Applet1 extends Applet {
         xQ = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
         yQ = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
         zQ = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
+        prevedPoleNaPolynom( polynomJedna );
+        prevedPoleNaPolynom( polynomNula );
+        prevedPoleNaPolynom( ECa );
+        prevedPoleNaPolynom( ECb );
+        prevedPoleNaPolynom( ECc );
         
-        //xBodA = new cBinarniTeleso();
-        //yBodA = new cBinarniTeleso();
-        //zBodA = new cBinarniTeleso();
-        //xBodB = new cBinarniTeleso();
-        //yBodB = new cBinarniTeleso();
-        //zBodB = new cBinarniTeleso();
         register();
     }
 
@@ -159,11 +158,14 @@ public class Applet1 extends Applet {
 
                 //Odesilani odpovedi test
                 short le = apdu.setOutgoing();
-                apdu.setOutgoingLength( ( byte ) (xP.length+yP.length+zP.length) );
-                buffer[0] = ( byte ) 0xAA;
-                buffer[1] = ( byte ) 0xFF;
-                buffer[2] = ( byte ) 0x33;
-                apdu.sendBytes( ( byte ) 0, ( byte ) 3 );
+                apdu.setOutgoingLength( (byte) (3*DELKAPOLE) );
+                for (byte i = 0; i < DELKAPOLE; i++) {
+                    buffer[i]               = xP[DELKAPOLE-1-i];
+                    buffer[DELKAPOLE+i]     = yP[DELKAPOLE-1-i];
+                    buffer[2*DELKAPOLE+i]   = zP[DELKAPOLE-1-i];
+                }
+                
+                apdu.sendBytes( B0, (byte) (3*DELKAPOLE) );
                 break;
 
             case 0x00: // Test
@@ -282,10 +284,10 @@ public class Applet1 extends Applet {
             return;
         }
 
-        prinasobPolynom( xQ, yP );  // 15.
         prinasobPolynom( zP, xP );  // 16.  // vypocte L a Z2 pokud Z1==1
 
-        prinasobPolynom( yQ, zP );  // 17.        
+        prinasobPolynom( xQ, yP );  // 15.
+        prinasobPolynom( yQ, zP );  // 17.
         prictiPolynom( xQ, yQ );    // 18.  // vypocte V
 
         priradPolynom( yQ, zP );    // 19a.
@@ -300,7 +302,7 @@ public class Applet1 extends Applet {
         }
         
         priradPolynom( xQ, zP );    // 22a.
-        prictiPolynom( xQ, yP );    // 22.  // vycpote T
+        prictiPolynom( xQ, yP );    // 22.  // vypocte T
 
         prinasobPolynom( yP, xQ );  // 23.
 
@@ -363,28 +365,25 @@ public class Applet1 extends Applet {
             Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA +     delkaArgumentu ), yP, ( byte ) 0, delkaArgumentu );
             Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 2 * delkaArgumentu ), xQ, ( byte ) 0, delkaArgumentu );
             Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 3 * delkaArgumentu ), yQ, ( byte ) 0, delkaArgumentu );
-            priradPolynom( zP, polynomJedna); // zP[0] = B1;
-            priradPolynom( zQ, polynomJedna); // zQ[0] = B1;
-
-            /*byte[] tmp = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
-
-            Util.arrayCopyNonAtomic( buffer, ISO7816.OFFSET_CDATA, tmp, ( byte ) 0, delkaArgumentu );
-            xP.inicializace( tmp );
-
-            Util.arrayCopyNonAtomic( buffer, (short) ( ISO7816.OFFSET_CDATA+(1*delkaArgumentu) ), tmp, ( short ) 0, delkaArgumentu );
-            yP.inicializace( tmp );
-
-            Util.arrayCopyNonAtomic( buffer, (short) ( ISO7816.OFFSET_CDATA+(2*delkaArgumentu) ), tmp, ( short ) 0, delkaArgumentu );
-            xQ.inicializace( tmp );
-
-            Util.arrayCopyNonAtomic( buffer, (short) ( ISO7816.OFFSET_CDATA+(3*delkaArgumentu) ), tmp, ( short ) 0, delkaArgumentu );
-            yQ.inicializace( tmp );
-
-            Util.arrayFillNonAtomic( tmp, S0, (short)tmp.length, B0);
-            tmp[0] = B1;
-            zBodA.inicializace( tmp );
-            zBodB.inicializace( tmp );
-            */
+            // Osetreni zadavani bodu O
+            if ( jePoleNula( xP ) && jePoleNula( yP ) ) {
+                priradPolynom( xP, polynomJedna );
+                priradPolynom( yP, polynomJedna );
+                priradPolynom( zP, polynomNula );
+            } else {
+                prevedPoleNaPolynom( xP );
+                prevedPoleNaPolynom( yP );
+                priradPolynom( zP, polynomJedna ); // zP[0] = B1;
+            }
+            if ( jePoleNula( xQ ) && jePoleNula( yQ ) ) {
+                priradPolynom( xQ, polynomJedna );
+                priradPolynom( yQ, polynomJedna );
+                priradPolynom( zQ, polynomNula );
+            } else {
+                prevedPoleNaPolynom( xQ );
+                prevedPoleNaPolynom( yQ );
+                priradPolynom( zQ, polynomJedna ); // zQ[0] = B1;
+            }
         } catch ( ArrayIndexOutOfBoundsException ex ) {
             // TODO #ERR
             return 2;
@@ -428,12 +427,15 @@ public class Applet1 extends Applet {
             // zde je to jednoduche
             C[index-10] ^= bajt;
         }
+        // Vynulovani bitu x^79 po redukci (v cyklu)
+        C[DELKAPOLE-1] &= 0x7F;
+        
         index      = DELKAPOLEkrat2;
         spodniCast = (byte) (( C[index-1] >> 7 ) & 0x01);
-
+        
         // vysledek nakopiruje do A
         zkopirujPole( A, C, (byte) A.length );
-        // TODO
+        
         JCSystem.requestObjectDeletion(); // C
 
         return ( spodniCast == 0x00 );
@@ -478,7 +480,7 @@ public class Applet1 extends Applet {
         }
         // redukce -----------------------------------------
         //if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
-        if ( ! redukujDvojnasobnyPolynom( a, c ) ) { // TODO KONTROLA
+        if ( ! redukujDvojnasobnyPolynom( A, c ) ) {
             // Nemelo by nastat. Znamenalo by to, ze byl 
             // nejvyssi bit nastaven na 1
             return false;
@@ -524,6 +526,19 @@ public class Applet1 extends Applet {
     
     
     /************************* Operace s poli *************************/
+    
+    // Otoci poradi bajtu pole (human readable do computer readable formy)
+    private static void prevedPoleNaPolynom( byte[] A ) {
+        byte bajt, index;
+        
+        for (byte i = 0; i < (byte)(A.length/2); i++) {
+            bajt = A[i];
+            index = (byte) ( A.length-1-i );
+            A[i] = A[index];
+            A[index] = bajt;
+        }
+    }
+    
     private static byte[] vytvorPrazdnePole( byte delka ) {
         return JCSystem.makeTransientByteArray( delka, JCSystem.CLEAR_ON_RESET );
     }
