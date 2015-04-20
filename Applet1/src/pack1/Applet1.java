@@ -41,7 +41,7 @@ import javacard.framework.*;
  */
 public class Applet1 extends Applet {
 
-    // Konstanty
+    /************************* Konstanty ***************************/
     private static final byte   DELKAPOLE      = (byte)( 10 );
     private static final byte   DELKAPOLEkrat2 = (byte)( 2 * DELKAPOLE );
     // private static final byte   SOURADNIC = (byte)( 3 );
@@ -88,20 +88,22 @@ public class Applet1 extends Applet {
         (byte) 0x55  // '1111' -> '01010101'
     };
     
-    private byte[] xP;
-    private byte[] yP;
+    private byte[] xP = {
+       ( byte ) 0x30, ( byte ) 0xCB, ( byte ) 0x12, ( byte ) 0x7B, ( byte ) 0x63,
+       ( byte ) 0xE4, ( byte ) 0x27, ( byte ) 0x92, ( byte ) 0xF1, ( byte ) 0x0F 
+    };
+    private byte[] yP = {
+       ( byte ) 0x54, ( byte ) 0x7B, ( byte ) 0x2C, ( byte ) 0x88, ( byte ) 0x26,
+       ( byte ) 0x6B, ( byte ) 0xB0, ( byte ) 0x4F, ( byte ) 0x71, ( byte ) 0x3B 
+    };
     private byte[] zP;
     private byte[] xQ;
     private byte[] yQ;
     private byte[] zQ;
-//     cBinarniTeleso xBodA;
-//     cBinarniTeleso yBodA;
-//     cBinarniTeleso zBodA;
-//     cBinarniTeleso xBodB;
-//     cBinarniTeleso yBodB;
-//     cBinarniTeleso zBodB;
     short delkaArgumentu = -1;
-
+    /******************************************************************/
+    
+    
     /**
      * Installs this applet.
      *
@@ -152,12 +154,13 @@ public class Applet1 extends Applet {
                 if ( parsujPrichoziData( apdu, buffer, B4 ) != 0 ) {
                     ISOException.throwIt( ISO7816.SW_DATA_INVALID );
                 }
+                
                 sectiBody();
 
                 //Odesilani odpovedi test
                 short le = apdu.setOutgoing();
-                apdu.setOutgoingLength( ( byte ) 3 );
-                buffer[0] = ( byte ) le;
+                apdu.setOutgoingLength( ( byte ) (xP.length+yP.length+zP.length) );
+                buffer[0] = ( byte ) 0xAA;
                 buffer[1] = ( byte ) 0xFF;
                 buffer[2] = ( byte ) 0x33;
                 apdu.sendBytes( ( byte ) 0, ( byte ) 3 );
@@ -174,7 +177,8 @@ public class Applet1 extends Applet {
         // no error
         JCSystem.requestObjectDeletion();
     }
-
+    
+    /*********************** Operace s body *************************/
     // P <- 2*P; algoritmus dle [4], A.10.6
     // ( v Q je totozny bod s P )
     public void zdvojBod( ) {
@@ -207,7 +211,7 @@ public class Applet1 extends Applet {
         prictiPolynom( yP, T1 );       // 19.   // vypocte Y2
 
         // TODO delete T1
-        requestObjectDeletion();
+        JCSystem.requestObjectDeletion();
     }
 
     // P <- P + Q; algoritmus dle [4], A.10.7, A.10.8
@@ -333,6 +337,7 @@ public class Applet1 extends Applet {
         return;
     }
 
+    
     /**
      * Metoda ulozi oba body z prichoziho bufferu do tridnich promennych a
      * rozhodne, jestli jsou stejne
@@ -354,14 +359,14 @@ public class Applet1 extends Applet {
         delkaArgumentu = ( byte ) ( delka / pocetArgumentu );
 
         try {
-            // Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + delkaArgumentu ), xBodA.hodnoty, ( byte ) 0, delkaArgumentu ); + alokace
-            // Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + delkaArgumentu ), yBodA, ( byte ) 0, delkaArgumentu );
-            // Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 2 * delkaArgumentu ), xBodB, ( byte ) 0, delkaArgumentu );
-            // Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 3 * delkaArgumentu ), yBodB, ( byte ) 0, delkaArgumentu );
-            // zBodA[0] = B1;
-            // zBodB[0] = B1;
+            Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA                      ), xP, ( byte ) 0, delkaArgumentu );
+            Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA +     delkaArgumentu ), yP, ( byte ) 0, delkaArgumentu );
+            Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 2 * delkaArgumentu ), xQ, ( byte ) 0, delkaArgumentu );
+            Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 3 * delkaArgumentu ), yQ, ( byte ) 0, delkaArgumentu );
+            priradPolynom( zP, polynomJedna); // zP[0] = B1;
+            priradPolynom( zQ, polynomJedna); // zQ[0] = B1;
 
-            byte[] tmp = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
+            /*byte[] tmp = JCSystem.makeTransientByteArray( DELKAPOLE, JCSystem.CLEAR_ON_RESET );
 
             Util.arrayCopyNonAtomic( buffer, ISO7816.OFFSET_CDATA, tmp, ( byte ) 0, delkaArgumentu );
             xP.inicializace( tmp );
@@ -379,6 +384,7 @@ public class Applet1 extends Applet {
             tmp[0] = B1;
             zBodA.inicializace( tmp );
             zBodB.inicializace( tmp );
+            */
         } catch ( ArrayIndexOutOfBoundsException ex ) {
             // TODO #ERR
             return 2;
@@ -389,77 +395,9 @@ public class Applet1 extends Applet {
 
         return 0;
     }
-
-    /**
-     * @param a byte[] Prvni porovnavane pole
-     * @param b byte[] Druhe porovnavane pole
-     * @return byte 0-pole jsou stejna
-     */
-    public static boolean jsouPoleStejna( final byte[] a, final byte[] b ) {
-        if ( a.length != b.length ) {
-            return false;
-        }
-        for ( byte i = 0; i < a.length; i++ ) {
-            if ( a[i] != b[i] ) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static boolean jePoleNula( final byte[] A ) {
-        for ( byte i = 0 ; i < A.length ; i++ ) {
-            if ( a[i] != B0 )
-                return false;
-        }
-        return true;
-    }
-
-    private static byte[] vytvorPrazdnePole( byte delka = DELKAPOLE ) {
-        return JCSystem.makeTransientByteArray( delka, JCSystem.CLEAR_ON_RESET );
-    }
-
-    // A<<1; posune pole A o jeden bit, vrati true/false, podle toho, jestli 
-    // operace dopadla dobre, tedy, pokud nejvyssi bit byl 1, vrati false,
-    // protoze doslo k prenosu / chybe
-    private static boolean posunPoleDoleva( byte[] A ) {
-        byte aktualniBit = 0x00;
-        byte predeslyBit = 0x00;
-        for ( byte i = 0 ; i < A.length ; i++ ) {
-            aktualniBit  = (byte) ( (A[i] >> 7) & 0x01 );
-            A[i]         = (byte) ( (A[i] << 1) & 0xFE );
-            A[i]         = (byte) ( (A[i] | predeslyBit));
-            predeslyBit  = aktualniBit;
-        }
-        // predeslyBit je stejny jako aktualniBit
-        return ( predeslyBit == 0x00 );
-    }
-
-    // A <- B; nakopiruje pole B do A
-    private static void zkopirujPole( byte[] A, final byte[] B ) {
-        Util.arrayCopyNonAtomic( B, B0, A, B0, A.length );
-        // for ( byte i = 0 ; i < delka ; i++ ) {
-        //     A[i] = B[i];
-        // }
-    }
-
-    // A <- A xor B; naxoruje pole B do A
-    private static void prictiPole( byte[] A, final byte[] B, byte offset = 0 ) {
-        for ( byte i = 0 ; i < B.length ; i++ ) {
-            A[i+offset] ^= B[i];
-        }
-    }
-
-    // A_{indexBitu} == 1; vraci true/false na zaklade hodnoty daneho BITU v poli bytu
-    private static boolean bitZPole( final byte[] A, final byte indexBitu ) {
-        // adresace jednoho bitu z pole
-        byte byteVPoli = (byte) (indexBitu / 8);
-        byte bitVBytu  = (byte) (indexBitu % 8);
-        // extrakce daneho bitu
-        byte bit       = (byte) (( A[byteVPoli] >> bitVBytu ) & 0x01);
-        return ( bit == 0x01 );
-    }
-
+    /******************************************************************/
+    
+    /********************** Operace s polynomy ************************/
     // A <- B mod P; inspirace z [3], alg. 4
     // Redukuje pole B max do delky 2*DELKAPOLE, ale nejvyssi bit 
     // dvojnasobneho pole musi byt 0, jinak neredukuje vse.
@@ -473,9 +411,9 @@ public class Applet1 extends Applet {
         zkopirujPole( C, B );
 
         for ( index = DELKAPOLEkrat2 - 1 ; index >= DELKAPOLE; index-- ) {
-            horniCast  = ( C[index]   << 1 ) & 0xFE;
-            spodniCast = ( C[index-1] >> 7 ) & 0x01;
-            bajt       = horniCast ^ spodniCast;
+            horniCast  = (byte) (( C[index]   << B1 ) & (byte) 0xFE);
+            spodniCast = (byte) (( C[index-1] >> (byte)7 ) & (byte) 0x01);
+            bajt       = (byte) (horniCast ^ spodniCast);
             // pro x^9 ..........................
             // horni bit
             horniCast  = (byte) ( (bajt >> 7) & 0x01 );
@@ -491,39 +429,20 @@ public class Applet1 extends Applet {
             C[index-10] ^= bajt;
         }
         index      = DELKAPOLEkrat2;
-        spodniCast = ( C[index-1] >> 7 ) & 0x01;
+        spodniCast = (byte) (( C[index-1] >> 7 ) & 0x01);
 
         // vysledek nakopiruje do A
-        zkopirujPole( A, C );
+        zkopirujPole( A, C, (byte) A.length );
         // TODO
-        C.requestObjectDeletion();
+        JCSystem.requestObjectDeletion(); // C
 
         return ( spodniCast == 0x00 );
     }
     
-//     public void inicializace( byte[] polynom ) {
-//         hodnoty = vytvorPrazdnePole( DELKAPOLE );
-//         for ( short i = 0 ; i < DELKAPOLE ; i++ ) { 
-//             hodnoty[i] = polynom[i];
-//         }
-//     }
-
-//     public void destruct() {
-//         // TODO
-//         JCSystem.requestObjectDeletion();
-//     }
-
     // A <- B
     public static boolean priradPolynom( byte[] A, final byte[] B ) {
         zkopirujPole( A, B );
         return true;
-    }
-
-    // kopie A
-    public static byte[] vytvorKopiiPolynomu( final byte[] A ) {
-        byte[] B = vytvorPrazdnePole();
-        priradPolynom( B, A )
-        return B;
     }
 
     // A <- A xor B
@@ -548,8 +467,8 @@ public class Applet1 extends Applet {
         for ( byte j = 0 ; j < 8 ; j++ ) {
             // cyklus pres bajty
             for ( byte i = 0 ; i < DELKAPOLE ; i++ ) {
-                if ( bitZPole( b, (byte) ( i*8 + j ) )
-                    prictiPole( c, a, i )
+                if ( bitZPole( b, (byte) ( i*8 + j ) ))
+                    prictiPole( c, a, i );
             }
             if ( ! posunPoleDoleva( a ) ) {
                 // nesmi nasat, ze by nejaky bit vypadl. Znamenalo by to,
@@ -558,15 +477,17 @@ public class Applet1 extends Applet {
             }
         }
         // redukce -----------------------------------------
-        if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
+        //if ( ! redukujDvojnasobnyPolynom( hodnoty, c ) ) {
+        if ( ! redukujDvojnasobnyPolynom( a, c ) ) { // TODO KONTROLA
             // Nemelo by nastat. Znamenalo by to, ze byl 
             // nejvyssi bit nastaven na 1
             return false;
         }
-
-        // TODO
-        a.requestObjectDeletion();
-        c.requestObjectDeletion();
+        
+        
+        JCSystem.requestObjectDeletion();
+        // a.requestObjectDeletion(); //a
+        // c.requestObjectDeletion(); //c
 
         return true;
     }
@@ -580,11 +501,11 @@ public class Applet1 extends Applet {
         // expanze -----------------------------------------
         for ( byte i = DELKAPOLE-1 ; i >= 0 ; i-- ) {
             // spodni nibble
-            nibble   = ( A[i]      ) & 0x0F;
+            nibble   = (byte) (( A[i]      ) & 0x0F);
             C[2*i]   = expanze[nibble];
             // horni nibble
-            nibble   = ( A[i] >> 4 ) & 0x0F;
-            C[2*i+1] = expanze[nibble];
+            nibble   = (byte) (( A[i] >> 4 ) & 0x0F);
+            C[(byte)(2*i+1)] = expanze[nibble];
         }
 
         // redukce -----------------------------------------
@@ -595,9 +516,104 @@ public class Applet1 extends Applet {
         }
 
         // TODO
-        C.requestObjectDeletion();
+        //C.requestObjectDeletion();
+        JCSystem.requestObjectDeletion();
         return true;
     }
+    /******************************************************************/
     
+    
+    /************************* Operace s poli *************************/
+    private static byte[] vytvorPrazdnePole( byte delka ) {
+        return JCSystem.makeTransientByteArray( delka, JCSystem.CLEAR_ON_RESET );
+    }
+    // Takto se v Jave definuje defaultni hodnota parametru (#PARAM smazat????)
+    private static byte[] vytvorPrazdnePole( ) {
+        return vytvorPrazdnePole( DELKAPOLE );
+    }
+
+    // A <- B; nakopiruje pole B do A
+    private static void zkopirujPole( byte[] A, final byte[] B ) {
+        zkopirujPole( A, B, (byte) B.length );
+    }
+    
+    // A <- B; nakopiruje pole B do A
+    private static void zkopirujPole( byte[] A, final byte[] B, byte delka ) {
+        Util.arrayCopyNonAtomic( B, B0, A, B0, delka );
+        // for ( byte i = 0 ; i < delka ; i++ ) {
+        //     A[i] = B[i];
+        // }
+    }
+    
+    // A <- A xor B; naxoruje pole B do A
+    private static void prictiPole( byte[] A, final byte[] B, byte offset ) {
+        for ( byte i = 0 ; i < B.length ; i++ ) {
+            A[i+offset] ^= B[i];
+        }
+    }
+    // Takto se v Jave definuje defaultni hodnota parametru (#PARAM)
+    // #PARAM
+    private static void prictiPole( byte[] A, final byte[] B ) {
+        prictiPole( A, B, B0 );
+    }
+    
+    // A<<1; posune pole A o jeden bit, vrati true/false, podle toho, jestli 
+    // operace dopadla dobre, tedy, pokud nejvyssi bit byl 1, vrati false,
+    // protoze doslo k prenosu / chybe
+    private static boolean posunPoleDoleva( byte[] A ) {
+        byte aktualniBit = 0x00;
+        byte predeslyBit = 0x00;
+        for ( byte i = 0 ; i < A.length ; i++ ) {
+            aktualniBit  = (byte) ( (A[i] >> 7) & 0x01 );
+            A[i]         = (byte) ( (A[i] << 1) & 0xFE );
+            A[i]         = (byte) ( (A[i] | predeslyBit));
+            predeslyBit  = aktualniBit;
+        }
+        // predeslyBit je stejny jako aktualniBit
+        return ( predeslyBit == 0x00 );
+    }
+    
+    // A_{indexBitu} == 1; vraci true/false na zaklade hodnoty daneho BITU v poli bytu
+    private static boolean bitZPole( final byte[] A, final byte indexBitu ) {
+        // adresace jednoho bitu z pole
+        byte byteVPoli = (byte) (indexBitu / 8);
+        byte bitVBytu  = (byte) (indexBitu % 8);
+        // extrakce daneho bitu
+        byte bit       = (byte) (( A[byteVPoli] >> bitVBytu ) & 0x01);
+        return ( bit == 0x01 );
+    }
+    
+    // kopie A
+    public static byte[] vytvorKopiiPolynomu( final byte[] A ) {
+        byte[] B = vytvorPrazdnePole();
+        priradPolynom( B, A );
+        return B;
+    }
+    
+    /**
+     * @param a byte[] Prvni porovnavane pole
+     * @param b byte[] Druhe porovnavane pole
+     * @return byte 0-pole jsou stejna
+     */
+    public static boolean jsouPoleStejna( final byte[] a, final byte[] b ) {
+        if ( a.length != b.length ) {
+            return false;
+        }
+        for ( byte i = 0; i < a.length; i++ ) {
+            if ( a[i] != b[i] ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean jePoleNula( final byte[] A ) {
+        for ( byte i = 0 ; i < A.length ; i++ ) {
+            if ( A[i] != B0 )
+                return false;
+        }
+        return true;
+    }
+    /******************************************************************/
 }
 
