@@ -49,7 +49,7 @@ public class Applet1 extends Applet {
         public byte[] hodnoty;
         
         public cPolynom() {
-            vytvorPrazdnePole( DELKAPOLE );
+            hodnoty = vytvorPrazdnePole( DELKAPOLE );
         }
         
         /*public ~cPolynom() {
@@ -215,7 +215,8 @@ public class Applet1 extends Applet {
         // P <- 2*P; algoritmus dle [4], A.10.6
         // ( v Q je totozny bod s P )
         public void zdvojBod( ) {
-            if ( jePoleNula( X.hodnoty ) || jePoleNula( Z.hodnoty ) ) { // 5.
+            //if ( jePoleNula( X.hodnoty ) || jePoleNula( Z.hodnoty ) ) { // 5.
+            if ( X.jePolynomNula() || Z.jePolynomNula() ) { // 5.
                 // Vysledek bude bod v nekonecnu
                 priradNekonecno();
                 return;
@@ -252,7 +253,8 @@ public class Applet1 extends Applet {
                 return;
             }
             // P <- 0 + Q
-            if ( jePoleNula( Z.hodnoty ) ) {
+            //if ( jePoleNula( Z.hodnoty ) ) {
+            if ( Z.jePolynomNula() ) {
                 priradBod( Q );
                 return;
             }
@@ -285,9 +287,11 @@ public class Applet1 extends Applet {
             Y.prictiPolynom( T8 );    // 13.  // vypocte R
 
             // pokud vyjde xP nula, jedna se o P +- P
-            if ( jePoleNula( X.hodnoty ) ) {   // 14.
+            //if ( jePoleNula( X.hodnoty ) ) {   // 14.
+            if ( X.jePolynomNula() ) {   // 14.
                 // pokud je i yP nula, jedna se o zdvojovani bodu
-                if ( jePoleNula( Y.hodnoty ) ) {
+                //if ( jePoleNula( Y.hodnoty ) ) {
+                if ( Y.jePolynomNula() ) {
                     // priradi puvodni souradnice
                     // TODO stoji za zvazeni, jestli se nepokazi normalizace bodu?!
                     priradBod( Q );
@@ -367,7 +371,8 @@ public class Applet1 extends Applet {
             priradNekonecno();
 
             // vysledek je bod v nekonecnu (1,1,0)
-            if ( jePoleNula( skalar ) || jePoleNula( R.Z.hodnoty ) ) {
+            //if ( jePoleNula( skalar ) || jePoleNula( R.Z.hodnoty ) ) {
+            if ( jePoleNula( skalar ) || R.Z.jePolynomNula() ) {
                 return;
             }
 
@@ -611,14 +616,16 @@ public class Applet1 extends Applet {
             Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 2 * DELKAPOLE ), Q.X.hodnoty, ( byte ) 0, DELKAPOLE );
             Util.arrayCopyNonAtomic( buffer, ( byte ) ( ISO7816.OFFSET_CDATA + 3 * DELKAPOLE ), Q.Y.hodnoty, ( byte ) 0, DELKAPOLE );
             // Osetreni zadavani bodu O
-            if ( jePoleNula( P.X.hodnoty ) && jePoleNula( P.Y.hodnoty ) ) {
+            //if ( jePoleNula( P.X.hodnoty ) && jePoleNula( P.Y.hodnoty ) ) {
+            if ( P.X.jePolynomNula() && P.Y.jePolynomNula() ) {
                 P.priradNekonecno();
             } else {
                 prevedPoleNaPolynom( P.X.hodnoty );
                 prevedPoleNaPolynom( P.Y.hodnoty );
                 P.Z.priradPolynom( polynomJedna ); // zP[0] = B1;
             }
-            if ( jePoleNula( Q.X.hodnoty ) && jePoleNula( Q.Y.hodnoty ) ) {
+            //if ( jePoleNula( Q.X.hodnoty ) && jePoleNula( Q.Y.hodnoty ) ) {
+            if ( Q.X.jePolynomNula() && Q.Y.jePolynomNula() ) {
                 Q.priradNekonecno();
             } else {
                 prevedPoleNaPolynom( Q.X.hodnoty );
