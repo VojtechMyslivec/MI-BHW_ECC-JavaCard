@@ -414,9 +414,12 @@ public class Applet1 extends Applet {
     private static final byte   B2 = 2;
     private static final byte   B4 = 4;
     private static final short  S0 = 0;
-    private static final short  DOLNICH8BITU = 0x00FF; // smazat?
+//    private static final short  DOLNICH8BITU = 0x00FF; // smazat?
     private static final byte[] polynomNula  = { B0, B0, B0, B0, B0, B0, B0, B0, B0, B0 };
     private static final byte[] polynomJedna = { B0, B0, B0, B0, B0, B0, B0, B0, B0, B1 };
+        (byte)0x42, (byte)0xFC, (byte)0x15, (byte)0x88, (byte)0x6B, 
+        (byte)0x55, (byte)0x12, (byte)0xF0, (byte)0xB5, (byte)0x0A 
+    };
     private static final byte[] ECa = {
        ( byte ) 0x4A, ( byte ) 0x2E, ( byte ) 0x38, ( byte ) 0xA8, ( byte ) 0xF6,
        ( byte ) 0x6D, ( byte ) 0x7F, ( byte ) 0x4C, ( byte ) 0x38, ( byte ) 0x5F 
@@ -536,6 +539,7 @@ public class Applet1 extends Applet {
         
         prevedPoleNaPolynom( polynomJedna );
         prevedPoleNaPolynom( polynomNula );
+        
         prevedPoleNaPolynom( ECa );
         prevedPoleNaPolynom( ECb );
         prevedPoleNaPolynom( ECc );
@@ -563,8 +567,9 @@ public class Applet1 extends Applet {
                 if ( parsujPrichoziData( apdu, buffer, B4 ) != 0 ) {
                     ISOException.throwIt( ISO7816.SW_DATA_INVALID );
                 }
-                
-                P.prictiBod( Q );
+//                JCSystem.beginTransaction();
+//                P.prictiBod( Q );
+//                JCSystem.commitTransaction();
                 
                 //Odesilani odpovedi test
                 short le = apdu.setOutgoing();
