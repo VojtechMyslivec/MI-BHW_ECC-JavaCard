@@ -1,0 +1,34 @@
+// test my applet
+establish_context
+enable_trace
+enable_timer
+card_connect
+// select
+send_apdu -sc 0 -APDU 00A40400080102030405060809
+//...
+
+// test DH 2. krok
+send_apdu -sc 0 -APDU 801100001E30CB127B63E42792F10F547B2C88266BB04F713B0000000000000000000100;
+// vysledek -- command not allowed
+
+
+
+// test DH 1. krok
+send_apdu -sc 0 -APDU 801000001430CB127B63E42792F10F547B2C88266BB04F713B1E;
+// vysledek -- nahodny
+
+// test DH 2. krok
+send_apdu -sc 0 -APDU 801100001E440d4bb674bc7d32e493507afa2d8df914c4a70e41c71e734dd110a6ca4700;
+// vysledek -- zadny
+
+// test DH 3a. krok
+send_apdu -sc 0 -APDU 80420000001E;
+// vysledek -- nahodny ka . kb . P
+
+// test DH 3b. krok
+send_apdu -sc 0 -APDU 80440000000A;
+// vysledek -- nahodny kb (soukormy klic)
+
+card_disconnect
+release_context
+powerdown;
