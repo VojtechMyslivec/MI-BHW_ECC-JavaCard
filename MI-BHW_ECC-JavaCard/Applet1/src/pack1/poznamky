@@ -1,7 +1,0 @@
-Upravy:
-A) Refaktoring syntaxe Java kodu
-    1) const neni, podobne je final (funguje jinak, lze menit)
-    2) ve vnitrni tride (cBinarniTeleso) nemuzou byt staticke metody, presunul jsem je do vnejsi tridy
-    3) vnitrni trida nemuze mit konstruktor
-    4) nefunguje inicializace pole, kde je pole parametr - inicializuje ale po navratu z funkce je pointer null (pole je reference ale ukazatel je hodnotou) (http://stackoverflow.com/questions/2831879/java-array-pass-by-reference-does-not-work)
-
