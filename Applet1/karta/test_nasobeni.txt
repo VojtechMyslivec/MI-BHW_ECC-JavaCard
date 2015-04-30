@@ -1,0 +1,19 @@
+// test my applet
+establish_context
+enable_trace
+enable_timer
+card_connect
+// select
+send_apdu -sc 0 -APDU 00A40400080102030405060809
+//...
+
+// test a.P   (nahodny)
+send_apdu -sc 0 -APDU 800200001E30CB127B63E42792F10F547B2C88266BB04F713B123456789012345678901E;
+// vysledek   440d4bb674bc7d32e493  507afa2d8df914c4a70e  41c71e734dd110a6ca47
+
+// test a.P   (nahodny)
+send_apdu -sc 0 -APDU 800200001E30CB127B63E42792F10F547B2C88266BB04F713B42FC15886B5512F0B50A1E;
+// vysledek   13f79584c82c2182ed5b  2f323f471b3ee7f5aa49  d11cb7380f7c5bfc2cd
+                                                                              
+card_disconnect
+release_context
